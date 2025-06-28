@@ -1,0 +1,8 @@
+{
+  "imports": {
+    "@/": "./src/",
+    "dotenv/load": "jsr:@std/dotenv/load",
+    "valibot": "jsr:@valibot/valibot",
+    "grammy": "https://deno.land/x/grammy/mod.ts"
+  }
+}
