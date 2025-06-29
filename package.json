@@ -1,0 +1,33 @@
+{
+  "name": "mango-panel",
+  "type": "module",
+  "private": true,
+  "module": "src/index.ts",
+  "scripts": {
+    "start": "bun src/index.ts",
+    "format": "prettier --write .",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@antfu/eslint-config": "^4.16.1",
+    "eslint": "^9.30.0",
+    "grammy": "^1.36.3",
+    "prettier": "^3.6.2",
+    "valibot": "^1.1.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-simple-import-sort": "^12.1.1"
+  },
+  "lint-staged": {
+    "./**/*.{ts,js}": [
+      "prettier --write",
+      "eslint --fix"
+    ]
+  }
+}
