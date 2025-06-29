@@ -4,6 +4,7 @@ import * as v from 'valibot'
 
 const envSchema = v.object({
   TELEGRAM_BOT_TOKEN: v.pipe(v.string(), v.minLength(1)),
+  DB_FILE_NAME: v.pipe(v.string(), v.minLength(1)),
 })
 
 const envParsed = v.safeParse(envSchema, Bun.env)
