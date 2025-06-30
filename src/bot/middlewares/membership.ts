@@ -57,12 +57,64 @@ const membershipMiddleware: MiddlewareFn<BotContext> = async (ctx, next) => {
       }
     }
 
-    await ctx.reply(
-      ctx.t('membership-join-required', { user: ctx.from?.first_name }),
-      { reply_markup: keyboard },
-    )
+    keyboard
+      .row()
+      .text(ctx.t('check_membership'), 'check_membership')
+      .row()
+      .text(
+        ctx.t('check_membership_time', {
+          time: new Date().toLocaleString(await ctx.i18n.getLocale()),
+        }),
+        'check_membership',
+      )
+
+    if (ctx.message) {
+      const sentMessage = await ctx.reply(
+        ctx.t('membership-join-required', { user: ctx.from?.first_name }),
+        { reply_markup: keyboard },
+      )
+
+      ctx.session.membershipMessageId = sentMessage.message_id
+      return
+    }
+
+    if (ctx.callbackQuery?.data === 'check_membership') {
+      await ctx.answerCallbackQuery({
+        text: ctx.t('checking_membership'),
+        show_alert: true,
+      })
+
+      if (ctx.chat?.id && ctx.session.membershipMessageId) {
+        try {
+          await ctx.api.editMessageReplyMarkup(ctx.chat.id, ctx.session.membershipMessageId, {
+            reply_markup: keyboard,
+          })
+        }
+        catch (error) {
+          if (error instanceof GrammyError && error.description?.includes('message is not modified')) {
+            logger.warn('Message is not modified, skipping update.')
+          }
+          else {
+            logger.error('Error while updating message reply markup:', error)
+          }
+        }
+      }
+    }
 
     return
+  }
+  else if (ctx.callbackQuery?.data === 'check_membership' && ctx.chat?.id && ctx.session.membershipMessageId) {
+    try {
+      await ctx.api.editMessageText(ctx.chat.id, ctx.session.membershipMessageId, ctx.t('membership-join-ok'))
+    }
+    catch (error) {
+      if (error instanceof GrammyError && error.description?.includes('message is not modified')) {
+        logger.warn('Message is not modified, skipping update.')
+      }
+      else {
+        logger.error('Error while updating message:', error)
+      }
+    }
   }
 
   return await next()
