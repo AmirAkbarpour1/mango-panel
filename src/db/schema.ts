@@ -6,7 +6,7 @@ export const membershipChannels = sqliteTable('membership_channels', {
   title: text('title').notNull(),
 })
 
-export const session = sqliteTable('session', {
+export const sessions = sqliteTable('sessions', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   key: text('key').unique().notNull(),
   value: text('data').notNull(),

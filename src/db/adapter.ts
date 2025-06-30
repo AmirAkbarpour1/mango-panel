@@ -2,11 +2,11 @@ import { eq } from 'drizzle-orm'
 import type { StorageAdapter } from 'grammy'
 
 import db from '@/db/index'
-import { session as sessionsTable } from '@/db/schema'
+import { sessions as sessionsTable } from '@/db/schema'
 
 export class DrizzleAdapter<T> implements StorageAdapter<T> {
   async read(key: string) {
-    const session = await db.query.session.findFirst({
+    const session = await db.query.sessions.findFirst({
       where: eq(sessionsTable.key, key),
     })
 
