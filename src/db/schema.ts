@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 export const membershipChannels = sqliteTable('membership_channels', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -10,4 +10,93 @@ export const sessions = sqliteTable('sessions', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   key: text('key').unique().notNull(),
   value: text('data').notNull(),
+})
+
+export const users = sqliteTable('users', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  telegramId: text('telegram_id').unique().notNull(),
+  firstName: text('first_name').notNull(),
+  lastName: text('last_name'),
+  username: text('username'),
+  walletBalance: real('wallet_balance').notNull().default(0),
+  role: text('role', { enum: ['admin', 'user'] }).notNull().default('user'),
+  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
+})
+
+export const walletTransactions = sqliteTable('wallet_transactions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull(),
+  type: text('type', { enum: ['charge', 'purchase', 'refund'] }).notNull(),
+  amount: real('amount').notNull(),
+  description: text('description'),
+  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
+})
+
+export const panels = sqliteTable('panels', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  url: text('url').notNull(),
+  username: text('username').notNull(),
+  password: text('password').notNull(),
+  title: text('title').notNull(),
+  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
+})
+
+export const panelInbounds = sqliteTable('panel_inbounds', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  panelId: integer('panel_id').notNull(),
+  inboundTag: text('inbound_tag').notNull(),
+  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
+})
+
+export const categories = sqliteTable('categories', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  title: text('title').notNull(),
+  parentId: integer('parent_id'),
+  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
+})
+
+export const services = sqliteTable('services', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  title: text('title').notNull(),
+  basePrice: real('base_price').notNull(),
+  pricePerDay: real('price_per_day'),
+  pricePerGB: real('price_per_gb'),
+  isDynamic: integer('is_dynamic').notNull().default(0),
+  categoryId: integer('category_id').notNull(),
+  panelId: integer('panel_id').notNull(),
+  allowCustomName: integer('allow_custom_name').notNull().default(0),
+  namePrefix: text('name_prefix'),
+  useRandomName: integer('use_random_name').notNull().default(1),
+  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
+})
+
+export const serviceInbounds = sqliteTable('service_inbounds', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  serviceId: integer('service_id').notNull(),
+  inboundId: integer('inbound_id').notNull(),
+})
+
+export const discountCodes = sqliteTable('discount_codes', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  code: text('code').unique().notNull(),
+  discountPercent: real('discount_percent').notNull(),
+  maxUsage: integer('max_usage').notNull(),
+  usedCount: integer('used_count').notNull().default(0),
+  expireAt: text('expire_at'),
+  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
+})
+
+export const userServices = sqliteTable('user_services', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull(),
+  serviceId: integer('service_id').notNull(),
+  status: text('status', { enum: ['pending', 'confirmed', 'active', 'expired', 'canceled'] }).notNull().default('pending'),
+  customPrice: real('custom_price'),
+  customVolume: real('custom_volume'),
+  customDuration: integer('custom_duration'),
+  customName: text('custom_name'),
+  discountCode: text('discount_code'),
+  finalPrice: real('final_price'),
+  adminNote: text('admin_note'),
+  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
 })
