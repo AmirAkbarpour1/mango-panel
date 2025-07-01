@@ -23,10 +23,14 @@ const membershipMiddleware: MiddlewareFn<BotContext> = async (ctx, next) => {
       }
       catch (error: unknown) {
         if (error instanceof GrammyError) {
-          logger.error(`Telegram API error while checking membership in channel ${channel.title}: ${error.description}`)
+          logger.error(
+            `Telegram API error while checking membership in channel ${channel.title}: ${error.description}`,
+          )
         }
         else {
-          logger.error(`Unknown error while checking membership in channel ${channel.title}: ${JSON.stringify(error)}`)
+          logger.error(
+            `Unknown error while checking membership in channel ${channel.title}: ${JSON.stringify(error)}`,
+          )
         }
       }
     }),
@@ -53,19 +57,24 @@ const membershipMiddleware: MiddlewareFn<BotContext> = async (ctx, next) => {
         }
       }
       catch (error) {
-        logger.error(`Error retrieving information for channel ${channel.title}: ${JSON.stringify(error)}`)
+        logger.error(
+          `Error retrieving information for channel ${channel.title}: ${JSON.stringify(error)}`,
+        )
       }
     }
 
     keyboard
       .row()
-      .text(ctx.t('check_membership'), 'check_membership')
+      .text(ctx.t('membership-check'), 'membership-check')
       .row()
       .text(
-        ctx.t('check_membership_time', {
-          time: new Date().toLocaleString(await ctx.i18n.getLocale()),
+        ctx.t('membership-check-time', {
+          time: new Date().toLocaleString(await ctx.i18n.getLocale(), {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          }),
         }),
-        'check_membership',
       )
 
     if (ctx.message) {
@@ -86,12 +95,19 @@ const membershipMiddleware: MiddlewareFn<BotContext> = async (ctx, next) => {
 
       if (ctx.chat?.id && ctx.session.membershipMessageId) {
         try {
-          await ctx.api.editMessageReplyMarkup(ctx.chat.id, ctx.session.membershipMessageId, {
-            reply_markup: keyboard,
-          })
+          await ctx.api.editMessageReplyMarkup(
+            ctx.chat.id,
+            ctx.session.membershipMessageId,
+            {
+              reply_markup: keyboard,
+            },
+          )
         }
         catch (error) {
-          if (error instanceof GrammyError && error.description?.includes('message is not modified')) {
+          if (
+            error instanceof GrammyError
+            && error.description?.includes('message is not modified')
+          ) {
             logger.warn('Message is not modified, skipping update.')
           }
           else {
@@ -103,12 +119,23 @@ const membershipMiddleware: MiddlewareFn<BotContext> = async (ctx, next) => {
 
     return
   }
-  else if (ctx.callbackQuery?.data === 'check_membership' && ctx.chat?.id && ctx.session.membershipMessageId) {
+  else if (
+    ctx.callbackQuery?.data === 'check_membership'
+    && ctx.chat?.id
+    && ctx.session.membershipMessageId
+  ) {
     try {
-      await ctx.api.editMessageText(ctx.chat.id, ctx.session.membershipMessageId, ctx.t('membership-join-ok'))
+      await ctx.api.editMessageText(
+        ctx.chat.id,
+        ctx.session.membershipMessageId,
+        ctx.t('membership-join-ok'),
+      )
     }
     catch (error) {
-      if (error instanceof GrammyError && error.description?.includes('message is not modified')) {
+      if (
+        error instanceof GrammyError
+        && error.description?.includes('message is not modified')
+      ) {
         logger.warn('Message is not modified, skipping update.')
       }
       else {

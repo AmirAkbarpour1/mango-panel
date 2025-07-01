@@ -7,10 +7,10 @@ membership-join-required =
 
  👇 Click the buttons below to quickly join the required channels:
 
-check_membership = ✅ Re-check Membership ✅
+membership-check = ✅ Re-check Membership
 
-check_membership_time = 🕒 Last checked: { $time }
+membership-check-time = 🕒 Last checked: { $time }
 
-checking_membership = ⚠️ You haven't joined all the required channels yet. Please complete your membership and try again.
+membership-checking = ⚠️ You haven't joined all the required channels yet. Please complete your membership and try again.
 
 membership-join-ok = 🎉 Membership confirmed! You have access to all features now. Enjoy!
