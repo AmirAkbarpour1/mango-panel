@@ -1,4 +1,4 @@
 export interface SessionData {
-  membershipMessageId: number | undefined
+  membershipMessagesId: number[]
   __language_code?: string
 }

@@ -1,19 +1,13 @@
 import { Bot } from 'grammy'
 
-import i18nMiddleware from '@/bot/middlewares/i18n'
-import membershipMiddleware from '@/bot/middlewares/membership'
-import privateChatMiddleware from '@/bot/middlewares/privateChat'
-import sessionMiddleware from '@/bot/middlewares/session'
+import registerHandlers from '@/bot/handlers/register'
+import registerMiddlewares from '@/bot/middlewares/register'
 import env from '@/config/env.ts'
-import type { BotContext } from '@/types/context'
+import type { AppBot } from '@/types/bot'
 
-const bot = new Bot<BotContext>(env.TELEGRAM_BOT_TOKEN)
+const bot: AppBot = new Bot(env.TELEGRAM_BOT_TOKEN)
 
-bot.use(
-  privateChatMiddleware,
-  sessionMiddleware,
-  i18nMiddleware,
-  membershipMiddleware,
-)
+registerMiddlewares(bot)
+registerHandlers(bot)
 
 bot.start()

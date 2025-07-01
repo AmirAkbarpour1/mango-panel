@@ -1,8 +1,6 @@
-import type { MiddlewareFn } from 'grammy'
+import type { BotMiddleWare } from '@/types/bot'
 
-import type { BotContext } from '@/types/context'
-
-const privateChatMiddleware: MiddlewareFn<BotContext> = async (ctx, next) => {
+const privateChatMiddleware: BotMiddleWare = async (ctx, next) => {
   if (ctx.chat?.type !== 'private') {
     return
   }

@@ -1,11 +1,11 @@
-import type { MiddlewareFn } from 'grammy'
 import { GrammyError, InlineKeyboard } from 'grammy'
 
+import homeKeyboard from '@/bot/keyboards/home'
 import db from '@/db'
 import logger from '@/lib/logger'
-import type { BotContext } from '@/types/context'
+import type { BotMiddleWare } from '@/types/bot'
 
-const membershipMiddleware: MiddlewareFn<BotContext> = async (ctx, next) => {
+const membershipMiddleware: BotMiddleWare = async (ctx, next) => {
   const userId = ctx.from?.id
   if (!userId)
     return await next()
@@ -79,29 +79,42 @@ const membershipMiddleware: MiddlewareFn<BotContext> = async (ctx, next) => {
 
     if (ctx.message) {
       const sentMessage = await ctx.reply(
-        ctx.t('membership-join-required', { user: ctx.from?.first_name }),
+        ctx.t('membership-join-required', { name: ctx.from.first_name }),
         { reply_markup: keyboard },
       )
 
-      ctx.session.membershipMessageId = sentMessage.message_id
+      ctx.session.membershipMessagesId?.push(sentMessage.message_id)
       return
     }
 
-    if (ctx.callbackQuery?.data === 'check_membership') {
+    if (
+      ctx.callbackQuery
+      && ctx.callbackQuery.data !== 'membership-check'
+      && ctx.callbackQuery.message
+    ) {
+      await ctx.editMessageText(
+        ctx.t('membership-join-required', { name: ctx.from.first_name }),
+        {
+          reply_markup: keyboard,
+        },
+      )
+      ctx.session.membershipMessagesId?.push(
+        ctx.callbackQuery.message.message_id,
+      )
+      return
+    }
+
+    if (ctx.callbackQuery?.data === 'membership-check') {
       await ctx.answerCallbackQuery({
-        text: ctx.t('checking_membership'),
+        text: ctx.t('membership-checking'),
         show_alert: true,
       })
 
-      if (ctx.chat?.id && ctx.session.membershipMessageId) {
+      if (ctx.chat?.id) {
         try {
-          await ctx.api.editMessageReplyMarkup(
-            ctx.chat.id,
-            ctx.session.membershipMessageId,
-            {
-              reply_markup: keyboard,
-            },
-          )
+          await ctx.editMessageReplyMarkup({
+            reply_markup: keyboard,
+          })
         }
         catch (error) {
           if (
@@ -119,17 +132,19 @@ const membershipMiddleware: MiddlewareFn<BotContext> = async (ctx, next) => {
 
     return
   }
-  else if (
-    ctx.callbackQuery?.data === 'check_membership'
-    && ctx.chat?.id
-    && ctx.session.membershipMessageId
-  ) {
+  else if (ctx.callbackQuery?.data === 'membership-check' && ctx.chat?.id) {
     try {
-      await ctx.api.editMessageText(
-        ctx.chat.id,
-        ctx.session.membershipMessageId,
-        ctx.t('membership-join-ok'),
-      )
+      if (ctx.session.membershipMessagesId) {
+        for (const messageId of ctx.session.membershipMessagesId) {
+          await ctx.api.editMessageText(
+            ctx.chat.id,
+            messageId,
+            ctx.t('messages-home', { name: ctx.from.first_name }),
+            { reply_markup: homeKeyboard(ctx.t) },
+          )
+        }
+      }
+      ctx.session.membershipMessagesId = []
     }
     catch (error) {
       if (
