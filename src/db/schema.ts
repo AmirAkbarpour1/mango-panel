@@ -22,7 +22,7 @@ export const sessions = sqliteTable('sessions', {
 
 export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  telegramId: text('telegram_id').unique().notNull(),
+  telegramId: integer('telegram_id').unique().notNull(),
   firstName: text('first_name').notNull(),
   lastName: text('last_name'),
   username: text('username'),
@@ -119,10 +119,18 @@ export const userServices = sqliteTable('user_services', {
   createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
 })
 
+export const issues = sqliteTable('issues', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull(),
+  issue: text('issue').notNull(),
+  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
+})
+
 /** Relations */
 export const usersRelations = relations(users, ({ many }) => ({
   walletTransactions: many(walletTransactions),
   userServices: many(userServices),
+  issues: many(issues),
 }))
 
 export const walletTransactionsRelations = relations(
@@ -190,4 +198,8 @@ export const userServicesRelations = relations(userServices, ({ one }) => ({
     fields: [userServices.serviceId],
     references: [services.id],
   }),
+}))
+
+export const issuesRelations = relations(issues, ({ one }) => ({
+  user: one(users, { fields: [issues.userId], references: [users.id] }),
 }))

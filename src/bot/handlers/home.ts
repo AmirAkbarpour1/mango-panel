@@ -1,11 +1,8 @@
 import homeKeyboard from '@/bot/keyboards/home'
-import type { BotMiddleWare } from '@/types/bot'
+import { createBotHandler } from '@/utils/createBotHandler'
 
-const homeHandler: BotMiddleWare = async (ctx) => {
-  const userId = ctx.from?.id
-  if (!userId)
-    return
-  if (ctx.callbackQuery) {
+const homeHandler = createBotHandler(async (ctx) => {
+  if (ctx.message) {
     await ctx.reply(ctx.t('messages-home', { name: ctx.from.first_name }), {
       reply_markup: homeKeyboard(ctx.t),
     })
@@ -18,6 +15,6 @@ const homeHandler: BotMiddleWare = async (ctx) => {
       },
     )
   }
-}
+})
 
 export default homeHandler
