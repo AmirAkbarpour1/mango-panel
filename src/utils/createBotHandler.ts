@@ -16,7 +16,7 @@ export function createBotHandler(
 ): MiddlewareFn<BotContext> {
   return async (ctx, next) => {
     if (!isPrivateMessage(ctx))
-      return
+      return await next()
 
     try {
       await callback(ctx, next)
