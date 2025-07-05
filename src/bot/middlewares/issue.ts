@@ -1,7 +1,7 @@
 import issueKeyboard from '@/bot/keyboards/issue'
 import db from '@/db'
 import { issues } from '@/db/schema'
-import { createBotHandler } from '@/utils/createBotHandler'
+import createBotHandler from '@/utils/createBotHandler'
 
 export const issueMiddleware = createBotHandler(async (ctx, next) => {
   if (ctx.callbackQuery?.data === 'issue-report') {

@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 
 import db from '@/db'
 import { users } from '@/db/schema'
-import { createBotHandler } from '@/utils/createBotHandler'
+import createBotHandler from '@/utils/createBotHandler'
 
 const userMiddleware = createBotHandler(async (ctx, next) => {
   const user = await db.query.users.findFirst({

@@ -1,5 +1,5 @@
 import homeKeyboard from '@/bot/keyboards/home'
-import { createBotHandler } from '@/utils/createBotHandler'
+import createBotHandler from '@/utils/createBotHandler'
 
 const homeHandler = createBotHandler(async (ctx) => {
   if (ctx.message) {

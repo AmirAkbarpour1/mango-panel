@@ -9,7 +9,7 @@ function isPrivateMessage(
   return Boolean(ctx.from && ctx.chat?.type === 'private')
 }
 
-export function createBotHandler(
+function createBotHandler(
   callback: MiddlewareFn<
     BotContext & { from: NonNullable<BotContext['from']> }
   >,
@@ -26,3 +26,5 @@ export function createBotHandler(
     }
   }
 }
+
+export default createBotHandler

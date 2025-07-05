@@ -4,9 +4,11 @@ import * as v from 'valibot'
 import homeKeyboard from '@/bot/keyboards/home'
 import db from '@/db'
 import { categories as categoriesTable, services, users } from '@/db/schema'
+import upfetch from '@/lib/upfetch'
 import BaseKeyboard from '@/utils/basekeyboard'
 import buildBreadcrumb from '@/utils/buildBreadcrumb'
-import { createBotHandler } from '@/utils/createBotHandler'
+import createApiHandler from '@/utils/createApiHandler'
+import createBotHandler from '@/utils/createBotHandler'
 import createName from '@/utils/createName'
 
 async function findUser(telegramId: number) {
@@ -21,6 +23,7 @@ async function findUser(telegramId: number) {
 async function findService(serviceId: number) {
   const service = await db.query.services.findFirst({
     where: eq(services.id, serviceId),
+    with: { panel: true },
   })
   if (!service)
     throw new Error('Service not found in buy handler')
@@ -174,6 +177,7 @@ const buyHandler = createBotHandler(async (ctx, next) => {
         reply_markup: keyboard.build(),
       })
     }
+
     if (ctx.callbackQuery.data === 'buy-cancel-home') {
       return ctx.editMessageText(
         ctx.t('messages-home', { name: ctx.from.first_name }),
@@ -219,8 +223,7 @@ const buyHandler = createBotHandler(async (ctx, next) => {
       const result = v.safeParse(
         v.pipe(
           v.string(),
-          v.regex(/^[a-zA-Z0-9](?:[a-zA-Z0-9_]*[a-zA-Z0-9])?$/,
-          ),
+          v.regex(/^[a-zA-Z0-9](?:[a-zA-Z0-9_]*[a-zA-Z0-9])?$/),
           v.minLength(3),
           v.maxLength(32),
         ),
@@ -229,6 +232,22 @@ const buyHandler = createBotHandler(async (ctx, next) => {
 
       if (!result.success) {
         return ctx.reply(ctx.t('messages-buy-invalid-name'), {
+          reply_parameters: { message_id: messageId },
+        })
+      }
+
+      const api = upfetch({
+        url: service.panel.url,
+        token: service.panel.token,
+      })
+
+      const userExists = await createApiHandler(
+        () => api(`/user/${userMessage}`),
+        { ignore404: true },
+      )
+
+      if (userExists) {
+        return ctx.reply(ctx.t('messages-buy-duplicate-name'), {
           reply_parameters: { message_id: messageId },
         })
       }

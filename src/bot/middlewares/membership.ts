@@ -2,7 +2,7 @@ import { InlineKeyboard } from 'grammy'
 
 import homeKeyboard from '@/bot/keyboards/home'
 import db from '@/db'
-import { createBotHandler } from '@/utils/createBotHandler'
+import createBotHandler from '@/utils/createBotHandler'
 
 const membershipMiddleware = createBotHandler(async (ctx, next) => {
   const channels = await db.query.membershipChannels.findMany()
