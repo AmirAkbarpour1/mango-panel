@@ -1,20 +1,42 @@
-import type { TranslateFunction } from '@grammyjs/i18n'
 import { InlineKeyboard } from 'grammy'
 
-class BaseKeyboard extends InlineKeyboard {
-  private parentCallback: string
-  private t: (key: string) => string
+import type { BotContext } from '@/types/bot'
 
-  constructor(parentCallback: string, t: TranslateFunction) {
+class BaseKeyboard extends InlineKeyboard {
+  private ctx: BotContext
+  private parentCallback?: string
+  private homeCallback: string
+  private prefix?: string
+
+  constructor({ ctx, parentCallback, homeCallback = 'home', prefix }: {
+    ctx: BotContext
+    parentCallback?: string
+    homeCallback?: string
+    prefix?: string
+  }) {
     super()
     this.parentCallback = parentCallback
-    this.t = t
+    this.homeCallback = homeCallback
+    this.prefix = prefix
+    this.ctx = ctx
   }
 
   build() {
-    this.row()
-      .text(this.t('buttons-back'), this.parentCallback)
-      .text(this.t('buttons-home'), 'home')
+    if (this.ctx) {
+      if (this.ctx.session.buy.isBuying && this.prefix === 'buy') {
+        this.row().text(this.ctx.t('buttons-buy-cancel'), 'buy-cancel')
+      }
+    }
+    if (this.parentCallback) {
+      this.row()
+        .text(this.ctx.t('buttons-back'), this.parentCallback)
+        .text(this.ctx.t('buttons-home'), this.homeCallback)
+    }
+    else {
+      this.row().text(this.ctx.t('buttons-home'), this.homeCallback)
+    }
+
+    return this
   }
 }
 

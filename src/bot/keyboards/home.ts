@@ -5,7 +5,7 @@ function homeKeyboard(t: TranslateFunction) {
   const keyboard = new InlineKeyboard()
 
   keyboard
-    .text(t('buttons-buyService'), 'buyService')
+    .text(t('buttons-buy'), 'buy')
     .row()
     .text(t('buttons-wallet'), 'wallet')
 

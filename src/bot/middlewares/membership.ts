@@ -6,7 +6,7 @@ import { createBotHandler } from '@/utils/createBotHandler'
 
 const membershipMiddleware = createBotHandler(async (ctx, next) => {
   const channels = await db.query.membershipChannels.findMany()
-  const nonMemberChannels: typeof channels = []
+  const nonMemberChannels = []
 
   for (const channel of channels) {
     const member = await ctx.api.getChatMember(channel.channelId, ctx.from.id)
@@ -16,7 +16,10 @@ const membershipMiddleware = createBotHandler(async (ctx, next) => {
   }
 
   if (nonMemberChannels.length === 0) {
-    if (ctx.callbackQuery?.data === 'membership-check' && ctx.chat?.id) {
+    if (ctx.callbackQuery?.data === 'membership-check') {
+      if (!ctx.chat?.id)
+        throw new Error('Chat ID not found in membership handler')
+
       if (ctx.session.membershipMessagesId) {
         for (const messageId of ctx.session.membershipMessagesId) {
           await ctx.api.editMessageText(
@@ -27,6 +30,7 @@ const membershipMiddleware = createBotHandler(async (ctx, next) => {
           )
         }
       }
+
       ctx.session.membershipMessagesId = []
     }
 
@@ -38,13 +42,9 @@ const membershipMiddleware = createBotHandler(async (ctx, next) => {
   for (const channel of nonMemberChannels) {
     const chatInfo = await ctx.api.getChat(channel.channelId)
 
-    let channelLink: string | undefined
-    if (chatInfo.username) {
-      channelLink = `https://t.me/${chatInfo.username}`
-    }
-    else if (chatInfo.invite_link) {
-      channelLink = chatInfo.invite_link
-    }
+    const channelLink = chatInfo.username
+      ? `https://t.me/${chatInfo.username}`
+      : chatInfo.invite_link
 
     if (channelLink) {
       keyboard.row().url(channel.title, channelLink)
@@ -68,35 +68,34 @@ const membershipMiddleware = createBotHandler(async (ctx, next) => {
   if (ctx.message) {
     const sentMessage = await ctx.reply(
       ctx.t('membership-join-required', { name: ctx.from.first_name }),
-      { reply_markup: keyboard },
+      { reply_markup: keyboard, reply_parameters: { message_id: ctx.message.message_id } },
     )
+
     ctx.session.membershipMessagesId?.push(sentMessage.message_id)
     return
   }
-  else if (
-    ctx.callbackQuery?.message
-    && ctx.callbackQuery.data !== 'membership-check'
-  ) {
-    await ctx.editMessageText(
-      ctx.t('membership-join-required', { name: ctx.from.first_name }),
-      { reply_markup: keyboard },
-    )
-    ctx.session.membershipMessagesId?.push(ctx.callbackQuery.message.message_id)
-    return
-  }
-  else if (ctx.callbackQuery?.data === 'membership-check') {
+
+  if (ctx.callbackQuery?.data === 'membership-check') {
     await ctx.answerCallbackQuery({
       text: ctx.t('membership-checking'),
       show_alert: true,
     })
 
-    await ctx.editMessageReplyMarkup({
-      reply_markup: keyboard,
-    })
+    await ctx.editMessageReplyMarkup({ reply_markup: keyboard })
     return
   }
 
-  return await next()
+  if (ctx.callbackQuery?.message) {
+    await ctx.editMessageText(
+      ctx.t('membership-join-required', { name: ctx.from.first_name }),
+      { reply_markup: keyboard },
+    )
+
+    ctx.session.membershipMessagesId?.push(ctx.callbackQuery.message.message_id)
+    return
+  }
+
+  throw new Error('Callback message not found in membership handler')
 })
 
 export default membershipMiddleware

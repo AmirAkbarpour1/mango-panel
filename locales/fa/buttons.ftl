@@ -1,7 +1,9 @@
 buttons-home = 🏠 خانه
 buttons-back = 🔙 بازگشت
 
-buttons-buyService = 🛒 خرید سرویس
+buttons-buy = 🛒 خرید سرویس
+buttons-buy-cancel = 🚫 لغو خرید جاری
+buttons-buy-confirm = ✅ تایید خرید سرویس
 buttons-wallet = 💰 کیف پول
 
 buttons-issue = ⚠️ گزارش مشکل

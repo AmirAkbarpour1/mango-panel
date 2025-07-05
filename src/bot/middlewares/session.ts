@@ -5,7 +5,7 @@ import type { BotContext } from '@/types/bot'
 import type { SessionData } from '@/types/session'
 
 function initial(): SessionData {
-  return { membershipMessagesId: [] }
+  return { membershipMessagesId: [], buy: { isBuying: false } }
 }
 
 const sessionMiddleware = session<SessionData, BotContext>({

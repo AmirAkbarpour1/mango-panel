@@ -5,7 +5,10 @@ import { createBotHandler } from '@/utils/createBotHandler'
 
 export const issueMiddleware = createBotHandler(async (ctx, next) => {
   if (ctx.callbackQuery?.data === 'issue-report') {
-    if (ctx.session.issueMessageId && ctx.chat) {
+    if (ctx.session.issueMessageId) {
+      if (!ctx.chat?.id)
+        throw new Error('Chat ID not found in issue handler')
+
       await ctx.api.editMessageText(
         ctx.chat.id,
         ctx.session.issueMessageId,
@@ -13,9 +16,11 @@ export const issueMiddleware = createBotHandler(async (ctx, next) => {
         { reply_markup: issueKeyboard(ctx.t, 'issue-report') },
       )
     }
+
     await ctx.editMessageText(ctx.t('messages-issue-report'), {
       reply_markup: issueKeyboard(ctx.t, 'issue-cancel'),
     })
+
     ctx.session.issueMessageId = ctx.callbackQuery.message?.message_id
   }
 
@@ -27,12 +32,16 @@ export const issueMiddleware = createBotHandler(async (ctx, next) => {
     ctx.session.issueMessageId = undefined
   }
 
-  if (ctx.session.issueMessageId && ctx.message?.text && ctx.chat) {
+  if (ctx.session.issueMessageId && ctx.message?.text) {
+    if (!ctx.chat?.id)
+      throw new Error('Chat ID not found in issue handler')
+
     await ctx.api.editMessageText(
       ctx.chat.id,
       ctx.session.issueMessageId,
       ctx.t('messages-issue-sent'),
     )
+
     ctx.session.issueMessageId = undefined
 
     await db.insert(issues).values({

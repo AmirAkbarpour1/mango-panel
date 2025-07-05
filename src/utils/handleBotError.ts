@@ -22,6 +22,7 @@ async function handleError(ctx: BotContext, error: unknown) {
     if (ctx.message) {
       await ctx.reply(ctx.t('messages-issue', { name: ctx.from.first_name }), {
         reply_markup: issueKeyboard(ctx.t),
+        reply_parameters: { message_id: ctx.message.message_id },
       })
     }
     else if (ctx.callbackQuery) {

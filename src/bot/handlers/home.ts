@@ -5,6 +5,7 @@ const homeHandler = createBotHandler(async (ctx) => {
   if (ctx.message) {
     await ctx.reply(ctx.t('messages-home', { name: ctx.from.first_name }), {
       reply_markup: homeKeyboard(ctx.t),
+      reply_parameters: { message_id: ctx.message.message_id },
     })
   }
   if (ctx.callbackQuery) {
