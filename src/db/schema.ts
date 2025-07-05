@@ -59,18 +59,12 @@ export const userServices = sqliteTable('user_services', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   userId: integer('user_id').notNull(),
   serviceId: integer('service_id').notNull(),
-  status: text('status', {
-    enum: ['pending', 'confirmed', 'active', 'expired', 'canceled'],
-  })
-    .notNull()
-    .default('pending'),
-  customPrice: real('custom_price'),
-  customVolume: real('custom_volume'),
-  customDuration: integer('custom_duration'),
-  customName: text('custom_name'),
+  basePrice: real('base_price'),
+  volume: real('volume'),
+  days: integer('days'),
+  name: text('name'),
   discountCode: text('discount_code'),
   finalPrice: real('final_price'),
-  adminNote: text('admin_note'),
   createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
 })
 

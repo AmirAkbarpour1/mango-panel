@@ -3,7 +3,13 @@ import * as v from 'valibot'
 
 import homeKeyboard from '@/bot/keyboards/home'
 import db from '@/db'
-import { categories as categoriesTable, services, users } from '@/db/schema'
+import {
+  categories as categoriesTable,
+  services,
+  users,
+  userServices,
+  walletTransactions,
+} from '@/db/schema'
 import upfetch from '@/lib/upfetch'
 import BaseKeyboard from '@/utils/basekeyboard'
 import buildBreadcrumb from '@/utils/buildBreadcrumb'
@@ -40,8 +46,14 @@ async function findCategory(categoryId: number) {
   return category
 }
 
+function calculateExpireTimestamp(days: number): number {
+  const now = new Date()
+  const expireDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
+  return Math.floor(expireDate.getTime() / 1000)
+}
+
 const buyHandler = createBotHandler(async (ctx, next) => {
-  if (ctx.callbackQuery?.data === 'buy' && ctx.callbackQuery.message) {
+  if (ctx.callbackQuery?.data === 'buy') {
     const categories = await db.query.categories.findMany({
       where: eq(categoriesTable.parentId, 0),
     })
@@ -107,28 +119,35 @@ const buyHandler = createBotHandler(async (ctx, next) => {
     if (!ctx.callbackQuery.message?.message_id)
       throw new Error('Message ID not found in buy handler')
 
-    ctx.session.buy = {
-      isBuying: true,
-      messageId: ctx.callbackQuery.message.message_id,
-      serviceId: service.id,
-      step: 'confirm',
+    if (service.nameMode !== 'custom') {
+      ctx.session.buy = {
+        isBuying: true,
+        messageId: ctx.callbackQuery.message.message_id,
+        serviceId: service.id,
+        step: 'confirm',
+        name: createName({
+          nameMode: service.nameMode,
+          namePrefix: service.namePrefix ?? undefined,
+        }),
+        volume: service.isDynamic ? 0 : service.fixedVolume!,
+        days: service.isDynamic ? 0 : service.fixedDays!,
+      }
     }
-
-    const nameMode = service.nameMode
-
-    if (nameMode === 'custom') {
-      ctx.session.buy.step = 'awaiting_name'
+    else {
+      ctx.session.buy = {
+        isBuying: true,
+        messageId: ctx.callbackQuery.message.message_id,
+        serviceId: service.id,
+        step: 'awaiting_name',
+      }
       return ctx.editMessageText(ctx.t('messages-buy-awaiting-name'))
     }
 
-    const name = createName({
-      nameMode,
-      namePrefix: service.namePrefix ?? undefined,
-    })
-
-    if (service.isDynamic || !service.fixedDays || !service.fixedVolume) {
-      ctx.session.buy.name = name
-      ctx.session.buy.step = 'awaiting_volume'
+    if (service.isDynamic) {
+      ctx.session.buy = {
+        ...ctx.session.buy,
+        step: 'awaiting_volume',
+      }
       return ctx.editMessageText(ctx.t('messages-buy-awaiting-volume'))
     }
 
@@ -137,9 +156,9 @@ const buyHandler = createBotHandler(async (ctx, next) => {
     return ctx.editMessageText(
       ctx.t('messages-buy-confirm', {
         breadcrumb,
-        name,
-        days: service.fixedDays,
-        volume: service.fixedVolume,
+        name: ctx.session.buy.name,
+        days: service.fixedDays!,
+        volume: service.fixedVolume!,
         price: service.basePrice,
         wallet: user.walletBalance,
       }),
@@ -154,6 +173,92 @@ const buyHandler = createBotHandler(async (ctx, next) => {
           .build(),
       },
     )
+  }
+
+  if (
+    ctx.callbackQuery?.data === 'buy-confirm'
+    && ctx.session.buy.isBuying
+    && ctx.session.buy.step === 'confirm'
+  ) {
+    const service = await findService(ctx.session.buy.serviceId)
+    const user = await findUser(ctx.from.id)
+
+    const api = upfetch({ url: service.panel.url, token: service.panel.token })
+
+    const name = ctx.session.buy.name
+    const volume = service.isDynamic
+      ? ctx.session.buy.volume
+      : service.fixedVolume
+    const days = service.isDynamic ? ctx.session.buy.days : service.fixedDays
+
+    if (!days || !name || !volume)
+      throw new Error('Incomplete buy session data in buy-confirm handler')
+
+    const expireTimestamp = calculateExpireTimestamp(days)
+
+    await createApiHandler(async () => {
+      return api('/user', {
+        method: 'POST',
+        body: {
+          data_limit: volume,
+          data_limit_reset_strategy: 'no_reset',
+          on_hold_expire_duration: 0,
+          on_hold_timeout: expireTimestamp,
+          proxies: { vless: {} },
+          status: 'active',
+          username: name,
+        },
+      })
+    })
+
+    let price = service.basePrice
+
+    if (service.isDynamic) {
+      if (!ctx.session.buy.volume || !ctx.session.buy.days) {
+        throw new Error(
+          'Dynamic service details are incomplete in buy-confirm handler',
+        )
+      }
+
+      price
+        = service.pricePerGB! * ctx.session.buy.volume
+          + service.pricePerDay! * ctx.session.buy.days
+    }
+
+    const balance = user.walletBalance - price
+
+    await db
+      .update(users)
+      .set({ walletBalance: balance })
+      .where(eq(users.telegramId, ctx.from.id))
+
+    await db.insert(walletTransactions).values({
+      userId: user.id,
+      type: 'purchase',
+      amount: price,
+      description: `Purchase of service: ${service.title}`,
+    })
+
+    await db.insert(userServices).values({
+      serviceId: service.id,
+      userId: user.id,
+      name,
+      days,
+      volume,
+      basePrice: price,
+      finalPrice: price,
+    })
+
+    ctx.session.buy = { isBuying: false }
+
+    await ctx.editMessageText(ctx.t('messages-buy-success'), {
+      reply_markup: homeKeyboard(ctx.t),
+    })
+
+    return ctx.answerCallbackQuery({
+      text: ctx.t('messages-buy-complete'),
+      show_alert: true,
+    })
   }
 
   if (ctx.callbackQuery?.data?.startsWith('buy-cancel')) {
@@ -181,9 +286,7 @@ const buyHandler = createBotHandler(async (ctx, next) => {
     if (ctx.callbackQuery.data === 'buy-cancel-home') {
       return ctx.editMessageText(
         ctx.t('messages-home', { name: ctx.from.first_name }),
-        {
-          reply_markup: homeKeyboard(ctx.t),
-        },
+        { reply_markup: homeKeyboard(ctx.t) },
       )
     }
 
@@ -252,36 +355,14 @@ const buyHandler = createBotHandler(async (ctx, next) => {
         })
       }
 
-      ctx.session.buy.name = userMessage
-
-      if (service.isDynamic || !service.fixedDays || !service.fixedVolume) {
-        ctx.session.buy.step = 'awaiting_volume'
-        return ctx.reply(ctx.t('messages-buy-awaiting-volume'), {
-          reply_parameters: { message_id: messageId },
-        })
+      ctx.session.buy = {
+        ...ctx.session.buy,
+        name: userMessage,
+        step: 'awaiting_volume',
       }
-
-      return ctx.reply(
-        ctx.t('messages-buy-confirm', {
-          breadcrumb,
-          name: ctx.session.buy.name,
-          days: service.fixedDays,
-          volume: service.fixedVolume,
-          price: service.basePrice,
-          wallet: user.walletBalance,
-        }),
-        {
-          reply_markup: new BaseKeyboard({
-            ctx,
-            prefix: 'buy',
-            parentCallback: `buy-cancel-${service.categoryId}`,
-            homeCallback: 'buy-cancel-home',
-          })
-            .text(ctx.t('buttons-buy-confirm'), `buy-confirm`)
-            .build(),
-          reply_parameters: { message_id: messageId },
-        },
-      )
+      return ctx.reply(ctx.t('messages-buy-awaiting-volume'), {
+        reply_parameters: { message_id: messageId },
+      })
     }
 
     if (ctx.session.buy.step === 'awaiting_volume') {
@@ -294,8 +375,7 @@ const buyHandler = createBotHandler(async (ctx, next) => {
         })
       }
 
-      ctx.session.buy.volume = volume
-      ctx.session.buy.step = 'awaiting_days'
+      ctx.session.buy = { ...ctx.session.buy, volume, step: 'awaiting_days' }
       return ctx.reply(ctx.t('messages-buy-awaiting-days'), {
         reply_parameters: { message_id: messageId },
       })
@@ -311,8 +391,7 @@ const buyHandler = createBotHandler(async (ctx, next) => {
         })
       }
 
-      ctx.session.buy.days = days
-      ctx.session.buy.step = 'confirm'
+      ctx.session.buy = { ...ctx.session.buy, days, step: 'confirm' }
 
       if (
         !ctx.session.buy.name
