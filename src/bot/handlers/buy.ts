@@ -219,8 +219,10 @@ const buyHandler = createBotHandler(async (ctx, next) => {
       const result = v.safeParse(
         v.pipe(
           v.string(),
-          v.regex(/^[a-z0-9](?:[a-z0-9_]{1,30}[a-z0-9])?$/),
+          v.regex(/^[a-zA-Z0-9](?:[a-zA-Z0-9_]*[a-zA-Z0-9])?$/,
+          ),
           v.minLength(3),
+          v.maxLength(32),
         ),
         userMessage,
       )
