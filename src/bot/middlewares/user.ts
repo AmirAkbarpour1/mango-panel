@@ -20,6 +20,8 @@ const userMiddleware = createBotHandler(async (ctx, next) => {
     ])
   }
 
+  await ctx.i18n.setLocale('fa')
+
   return await next()
 })
 

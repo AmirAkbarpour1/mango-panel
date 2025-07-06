@@ -1,0 +1,11 @@
+buttons-services = 🛍️ سرویس ها
+buttons-services-sub = 🔗 دریافت لینک سابسکریپشن
+buttons-services-name =  👤 نام کاربری :
+buttons-services-status = 🛠️ وضعیت :
+buttons-services-expiration = ⏳ زمان پایان :
+buttons-services-days-remaining = 📆 زمان باقی مانده سرویس :
+buttons-services-days = { $days } روز
+buttons-services-volume-total = 🔋 حجم کل سرویس :
+buttons-services-volume-usaged = 📊 حجم مصرف شده سرویس :
+buttons-services-volume-remaining = 🪫 حجم باقی مانده سرویس :
+buttons-services-volume = { $volume } گیگابایت

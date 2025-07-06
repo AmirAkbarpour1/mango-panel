@@ -53,10 +53,10 @@ const membershipMiddleware = createBotHandler(async (ctx, next) => {
 
   keyboard
     .row()
-    .text(ctx.t('membership-check'), 'membership-check')
+    .text(ctx.t('buttons-membership-check'), 'membership-check')
     .row()
     .text(
-      ctx.t('membership-check-time', {
+      ctx.t('buttons-membership-check-time', {
         time: new Date().toLocaleString(await ctx.i18n.getLocale(), {
           hour: '2-digit',
           minute: '2-digit',
@@ -67,8 +67,11 @@ const membershipMiddleware = createBotHandler(async (ctx, next) => {
 
   if (ctx.message) {
     const sentMessage = await ctx.reply(
-      ctx.t('membership-join-required', { name: ctx.from.first_name }),
-      { reply_markup: keyboard, reply_parameters: { message_id: ctx.message.message_id } },
+      ctx.t('messages-membership', { name: ctx.from.first_name }),
+      {
+        reply_markup: keyboard,
+        reply_parameters: { message_id: ctx.message.message_id },
+      },
     )
 
     ctx.session.membershipMessagesId?.push(sentMessage.message_id)
@@ -77,7 +80,7 @@ const membershipMiddleware = createBotHandler(async (ctx, next) => {
 
   if (ctx.callbackQuery?.data === 'membership-check') {
     await ctx.answerCallbackQuery({
-      text: ctx.t('membership-checking'),
+      text: ctx.t('messages-membership-checking'),
       show_alert: true,
     })
 

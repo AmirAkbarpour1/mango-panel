@@ -7,6 +7,8 @@ function homeKeyboard(t: TranslateFunction) {
   keyboard
     .text(t('buttons-buy'), 'buy')
     .row()
+    .text(t('buttons-services'), 'services')
+    .row()
     .text(t('buttons-wallet'), 'wallet')
 
   return keyboard

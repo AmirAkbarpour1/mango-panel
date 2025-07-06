@@ -1,7 +1,9 @@
 import { eq } from 'drizzle-orm'
+import { isResponseError } from 'up-fetch'
 import * as v from 'valibot'
 
 import homeKeyboard from '@/bot/keyboards/home'
+import serviceKeyboard from '@/bot/keyboards/service'
 import db from '@/db'
 import {
   categories as categoriesTable,
@@ -10,10 +12,11 @@ import {
   userServices,
   walletTransactions,
 } from '@/db/schema'
-import upfetch from '@/lib/upfetch'
+import api from '@/lib/api'
+import type { User } from '@/types/marzban'
 import BaseKeyboard from '@/utils/basekeyboard'
 import buildBreadcrumb from '@/utils/buildBreadcrumb'
-import createApiHandler from '@/utils/createApiHandler'
+import calculateRemainingDays from '@/utils/calculateRemainingDays'
 import createBotHandler from '@/utils/createBotHandler'
 import createName from '@/utils/createName'
 
@@ -183,8 +186,6 @@ const buyHandler = createBotHandler(async (ctx, next) => {
     const service = await findService(ctx.session.buy.serviceId)
     const user = await findUser(ctx.from.id)
 
-    const api = upfetch({ url: service.panel.url, token: service.panel.token })
-
     const name = ctx.session.buy.name
     const volume = service.isDynamic
       ? ctx.session.buy.volume
@@ -196,19 +197,18 @@ const buyHandler = createBotHandler(async (ctx, next) => {
 
     const expireTimestamp = calculateExpireTimestamp(days)
 
-    await createApiHandler(async () => {
-      return api('/user', {
-        method: 'POST',
-        body: {
-          data_limit: volume,
-          data_limit_reset_strategy: 'no_reset',
-          on_hold_expire_duration: 0,
-          on_hold_timeout: expireTimestamp,
-          proxies: { vless: {} },
-          status: 'active',
-          username: name,
-        },
-      })
+    const userResponse = await api<User>('/user', {
+      method: 'POST',
+      body: {
+        data_limit: volume,
+        data_limit_reset_strategy: 'no_reset',
+        on_hold_expire_duration: 0,
+        on_hold_timeout: expireTimestamp,
+        proxies: { vless: {} },
+        status: 'active',
+        username: name,
+      },
+      panelId: service.panelId,
     })
 
     let price = service.basePrice
@@ -239,25 +239,36 @@ const buyHandler = createBotHandler(async (ctx, next) => {
       description: `Purchase of service: ${service.title}`,
     })
 
-    await db.insert(userServices).values({
-      serviceId: service.id,
-      userId: user.id,
-      name,
-      days,
-      volume,
-      basePrice: price,
-      finalPrice: price,
-    })
+    const [userService] = await db
+      .insert(userServices)
+      .values({
+        serviceId: service.id,
+        userId: user.id,
+        name,
+        days,
+        volume,
+        basePrice: price,
+        finalPrice: price,
+      })
+      .returning({ id: userServices.id })
+
+    if (!userService)
+      throw new Error('user Service did not created in buy Handler')
 
     ctx.session.buy = { isBuying: false }
 
-    await ctx.editMessageText(ctx.t('messages-buy-success'), {
-      reply_markup: homeKeyboard(ctx.t),
-    })
+    const keyboard = await serviceKeyboard(
+      ctx,
+      userService.id,
+      userResponse.username,
+      userResponse.status,
+      calculateRemainingDays(userResponse.on_hold_timeout!),
+      userResponse.data_limit!,
+      userResponse.lifetime_used_traffic,
+    )
 
-    return ctx.answerCallbackQuery({
-      text: ctx.t('messages-buy-complete'),
-      show_alert: true,
+    return ctx.editMessageText(ctx.t('messages-services-service'), {
+      reply_markup: keyboard,
     })
   }
 
@@ -339,20 +350,19 @@ const buyHandler = createBotHandler(async (ctx, next) => {
         })
       }
 
-      const api = upfetch({
-        url: service.panel.url,
-        token: service.panel.token,
-      })
-
-      const userExists = await createApiHandler(
-        () => api(`/user/${userMessage}`),
-        { ignore404: true },
-      )
-
-      if (userExists) {
-        return ctx.reply(ctx.t('messages-buy-duplicate-name'), {
-          reply_parameters: { message_id: messageId },
+      try {
+        await api<User>(`/user/${userMessage}`, {
+          panelId: service.panelId,
         })
+      }
+      catch (error) {
+        if (isResponseError(error) && error.status === 404) {
+          return ctx.reply(ctx.t('messages-buy-duplicate-name'), {
+            reply_parameters: { message_id: messageId },
+          })
+        }
+
+        throw error
       }
 
       ctx.session.buy = {
