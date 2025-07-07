@@ -8,7 +8,12 @@ class BaseKeyboard extends InlineKeyboard {
   private homeCallback: string
   private prefix?: string
 
-  constructor({ ctx, parentCallback, homeCallback = 'home', prefix }: {
+  constructor({
+    ctx,
+    parentCallback,
+    homeCallback = 'home',
+    prefix,
+  }: {
     ctx: BotContext
     parentCallback?: string
     homeCallback?: string

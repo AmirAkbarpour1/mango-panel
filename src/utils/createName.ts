@@ -1,4 +1,7 @@
-function createName(service: { nameMode: 'random' | 'prefix', namePrefix?: string }): string {
+function createName(service: {
+  nameMode: 'random' | 'prefix'
+  namePrefix?: string
+}): string {
   const randomString = crypto.randomUUID().replace(/-/g, '').substring(0, 8)
 
   switch (service.nameMode) {
