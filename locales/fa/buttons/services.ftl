@@ -1,4 +1,5 @@
 buttons-services = 🛍️ سرویس ها
+buttons-services-empty = 🚫 در حال حاضر شما هیچ سرویسی ندارید
 buttons-services-sub = 🔗 لینک سابسکریپشن
 buttons-services-name =  👤 نام کاربری :
 buttons-services-status = 🛠️ وضعیت :

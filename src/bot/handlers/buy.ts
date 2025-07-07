@@ -109,19 +109,6 @@ const buyHandler = createBotHandler<
     const service = await findService(serviceId)
     const user = await findUser(ctx.from.id)
 
-    const balance = user.walletBalance - service.basePrice
-    if (balance < 0) {
-      return ctx.editMessageText(ctx.t('messages-buy-not-enough-money'), {
-        reply_markup: new BaseKeyboard({
-          ctx,
-          prefix: 'buy',
-          parentCallback: `buy-category-${service.categoryId}`,
-        })
-          .text(ctx.t('buttons-wallet'), 'wallet')
-          .build(),
-      })
-    }
-
     if (!ctx.callbackQuery.message?.message_id)
       throw new Error('Message ID not found in buy handler')
 
@@ -165,7 +152,7 @@ const buyHandler = createBotHandler<
         name: ctx.session.buy.name,
         days: service.fixedDays!,
         volume: service.fixedVolume!,
-        price: service.basePrice,
+        price: service.price!,
         wallet: user.walletBalance,
       }),
       {
@@ -188,6 +175,29 @@ const buyHandler = createBotHandler<
   ) {
     const service = await findService(ctx.session.buy.serviceId)
     const user = await findUser(ctx.callbackQuery.from.id)
+
+    let price = service.price ?? 0
+
+    if (service.isDynamic) {
+      if (!ctx.session.buy.volume || !ctx.session.buy.days) {
+        throw new Error(
+          'Dynamic service details are incomplete in buy-confirm handler',
+        )
+      }
+
+      price
+        = service.pricePerGB! * ctx.session.buy.volume
+          + service.pricePerDay! * ctx.session.buy.days
+    }
+
+    const balance = user.walletBalance - price
+
+    if (balance < 0) {
+      return await ctx.answerCallbackQuery({
+        text: ctx.t('messages-buy-not-enough-money'),
+        show_alert: true,
+      })
+    }
 
     const name = ctx.session.buy.name
     const volume = service.isDynamic
@@ -213,22 +223,6 @@ const buyHandler = createBotHandler<
       },
       panelId: service.panelId,
     })
-
-    let price = service.basePrice
-
-    if (service.isDynamic) {
-      if (!ctx.session.buy.volume || !ctx.session.buy.days) {
-        throw new Error(
-          'Dynamic service details are incomplete in buy-confirm handler',
-        )
-      }
-
-      price
-        = service.pricePerGB! * ctx.session.buy.volume
-          + service.pricePerDay! * ctx.session.buy.days
-    }
-
-    const balance = user.walletBalance - price
 
     await db
       .update(users)
@@ -268,6 +262,7 @@ const buyHandler = createBotHandler<
       calculateRemainingDays(userResponse.on_hold_timeout!),
       userResponse.data_limit!,
       userResponse.lifetime_used_traffic,
+      'services-page-1',
     )
 
     return ctx.editMessageText(ctx.t('messages-services-service'), {
@@ -356,16 +351,17 @@ const buyHandler = createBotHandler<
       try {
         await api<User>(`/user/${userMessage}`, {
           panelId: service.panelId,
+          ignore404: true,
+        })
+
+        return ctx.reply(ctx.t('messages-buy-duplicate-name'), {
+          reply_parameters: { message_id: messageId },
         })
       }
       catch (error) {
-        if (isResponseError(error) && error.status === 404) {
-          return ctx.reply(ctx.t('messages-buy-duplicate-name'), {
-            reply_parameters: { message_id: messageId },
-          })
+        if (isResponseError(error) && error.status !== 404) {
+          throw error
         }
-
-        throw error
       }
 
       ctx.session.buy = {

@@ -1,4 +1,4 @@
-import { relations } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
 import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 /** Users */
@@ -12,7 +12,9 @@ export const users = sqliteTable('users', {
   role: text('role', { enum: ['admin', 'user'] })
     .notNull()
     .default('user'),
-  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
+  createdAt: integer('created_at', { mode: 'number' })
+    .notNull()
+    .default(sql`(unixepoch())`),
 })
 
 /** Panels */
@@ -23,14 +25,16 @@ export const panels = sqliteTable('panels', {
   password: text('password').notNull(),
   title: text('title').notNull(),
   token: text('token').notNull(),
-  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
+  createdAt: integer('created_at', { mode: 'number' })
+    .notNull()
+    .default(sql`(unixepoch())`),
 })
 
 /** Services */
 export const services = sqliteTable('services', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   title: text('title').notNull(),
-  basePrice: real('base_price').notNull(),
+  price: real('price'),
   pricePerDay: real('price_per_day'),
   pricePerGB: real('price_per_gb'),
   isDynamic: integer('is_dynamic').notNull().default(0),
@@ -43,7 +47,9 @@ export const services = sqliteTable('services', {
     enum: ['random', 'prefix', 'custom'],
   }).notNull(),
   namePrefix: text('name_prefix'),
-  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
+  createdAt: integer('created_at', { mode: 'number' })
+    .notNull()
+    .default(sql`(unixepoch())`),
 })
 
 /** Categories */
@@ -51,7 +57,9 @@ export const categories = sqliteTable('categories', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   title: text('title').notNull(),
   parentId: integer('parent_id').notNull().default(0),
-  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
+  createdAt: integer('created_at', { mode: 'number' })
+    .notNull()
+    .default(sql`(unixepoch())`),
 })
 
 /** User Services */
@@ -65,7 +73,9 @@ export const userServices = sqliteTable('user_services', {
   name: text('name').notNull(),
   discountCode: text('discount_code'),
   finalPrice: real('final_price').notNull(),
-  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
+  createdAt: integer('created_at', { mode: 'number' })
+    .notNull()
+    .default(sql`(unixepoch())`),
 })
 
 /** Wallet Transactions */
@@ -75,7 +85,9 @@ export const walletTransactions = sqliteTable('wallet_transactions', {
   type: text('type', { enum: ['charge', 'purchase', 'refund'] }).notNull(),
   amount: real('amount').notNull(),
   description: text('description'),
-  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
+  createdAt: integer('created_at', { mode: 'number' })
+    .notNull()
+    .default(sql`(unixepoch())`),
 })
 
 /** Discount Codes */
@@ -86,7 +98,9 @@ export const discountCodes = sqliteTable('discount_codes', {
   maxUsage: integer('max_usage').notNull(),
   usedCount: integer('used_count').notNull().default(0),
   expireAt: text('expire_at'),
-  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
+  createdAt: integer('created_at', { mode: 'number' })
+    .notNull()
+    .default(sql`(unixepoch())`),
 })
 
 /** Issues */
@@ -94,7 +108,9 @@ export const issues = sqliteTable('issues', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   userId: integer('user_id').notNull(),
   issue: text('issue').notNull(),
-  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
+  createdAt: integer('created_at', { mode: 'number' })
+    .notNull()
+    .default(sql`(unixepoch())`),
 })
 
 /** Membership Channels */

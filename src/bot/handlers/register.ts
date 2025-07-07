@@ -8,7 +8,11 @@ function registerHandlers(bot: AppBot) {
   bot.callbackQuery('home', homeHandler)
   bot.callbackQuery(/buy*/, buyHandler)
   bot.on('message', buyHandler)
+  bot.callbackQuery(/services*/, servicesHandler)
   bot.inlineQuery(/services*/, servicesHandler)
+  bot.callbackQuery('noop', async (ctx) => {
+    await ctx.answerCallbackQuery()
+  })
 }
 
 export default registerHandlers

@@ -70,6 +70,7 @@ const membershipMiddleware = createBotHandler(async (ctx, next) => {
             second: '2-digit',
           }),
         }),
+        'noop',
       )
   }
 

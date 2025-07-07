@@ -38,6 +38,7 @@ interface ApiRequestOptions<TData = any, TResponse = any>
   > {
   panelId: number
   hasRetried?: boolean
+  ignore404?: boolean
 }
 
 const rawApi = up(fetch)
@@ -138,6 +139,10 @@ async function api<TResponse>(
           )
           throw refreshError
         }
+      }
+
+      if (error.status === 404 && options.ignore404) {
+        throw error
       }
     }
 
