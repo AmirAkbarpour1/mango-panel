@@ -12,11 +12,24 @@ const sessionMiddleware = session<SessionData, BotContext>({
   initial,
   storage: new DrizzleAdapter(),
   getSessionKey: (ctx) => {
-    if (ctx.chat)
+    if (ctx.chat?.id)
       return String(ctx.chat.id)
+
     if (ctx.inlineQuery)
       return `inline-${ctx.from?.id}`
-    return undefined
+
+    if (ctx.callbackQuery) {
+      if (ctx.callbackQuery.message?.chat?.id)
+        return String(ctx.callbackQuery.message.chat.id)
+
+      if (ctx.from?.id)
+        return `callback-${ctx.from.id}`
+    }
+
+    if (ctx.from?.id)
+      return `user-${ctx.from.id}`
+
+    return 'global-session'
   },
 })
 

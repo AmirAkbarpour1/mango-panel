@@ -13,6 +13,7 @@ import {
   walletTransactions,
 } from '@/db/schema'
 import api from '@/lib/api'
+import type { CallbackQueryBotContext, MessageBotContext } from '@/types/bot'
 import type { User } from '@/types/marzban'
 import BaseKeyboard from '@/utils/basekeyboard'
 import buildBreadcrumb from '@/utils/buildBreadcrumb'
@@ -55,7 +56,9 @@ function calculateExpireTimestamp(days: number): number {
   return Math.floor(expireDate.getTime() / 1000)
 }
 
-const buyHandler = createBotHandler(async (ctx, next) => {
+const buyHandler = createBotHandler<
+  CallbackQueryBotContext | MessageBotContext
+>(async (ctx, next) => {
   if (ctx.callbackQuery?.data === 'buy') {
     const categories = await db.query.categories.findMany({
       where: eq(categoriesTable.parentId, 0),
@@ -184,7 +187,7 @@ const buyHandler = createBotHandler(async (ctx, next) => {
     && ctx.session.buy.step === 'confirm'
   ) {
     const service = await findService(ctx.session.buy.serviceId)
-    const user = await findUser(ctx.from.id)
+    const user = await findUser(ctx.callbackQuery.from.id)
 
     const name = ctx.session.buy.name
     const volume = service.isDynamic
@@ -230,7 +233,7 @@ const buyHandler = createBotHandler(async (ctx, next) => {
     await db
       .update(users)
       .set({ walletBalance: balance })
-      .where(eq(users.telegramId, ctx.from.id))
+      .where(eq(users.telegramId, ctx.callbackQuery.from.id))
 
     await db.insert(walletTransactions).values({
       userId: user.id,

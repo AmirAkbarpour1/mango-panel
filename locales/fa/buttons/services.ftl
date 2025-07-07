@@ -1,5 +1,5 @@
 buttons-services = 🛍️ سرویس ها
-buttons-services-sub = 🔗 دریافت لینک سابسکریپشن
+buttons-services-sub = 🔗 لینک سابسکریپشن
 buttons-services-name =  👤 نام کاربری :
 buttons-services-status = 🛠️ وضعیت :
 buttons-services-expiration = ⏳ زمان پایان :

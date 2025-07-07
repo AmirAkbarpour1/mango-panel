@@ -12,7 +12,7 @@ export const issueMiddleware = createBotHandler(async (ctx, next) => {
       await ctx.api.editMessageText(
         ctx.chat.id,
         ctx.session.issueMessageId,
-        ctx.t('messages-issue', { name: ctx.from.first_name }),
+        ctx.t('messages-issue', { name: ctx.callbackQuery.from.first_name }),
         { reply_markup: issueKeyboard(ctx.t, 'issue-report') },
       )
     }
@@ -46,7 +46,7 @@ export const issueMiddleware = createBotHandler(async (ctx, next) => {
 
     await db.insert(issues).values({
       issue: ctx.message.text,
-      userId: ctx.from.id,
+      userId: ctx.message.from.id,
     })
   }
 

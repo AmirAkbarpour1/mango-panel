@@ -5,17 +5,22 @@ import { users } from '@/db/schema'
 import createBotHandler from '@/utils/createBotHandler'
 
 const userMiddleware = createBotHandler(async (ctx, next) => {
+  const from
+    = ctx.message?.from || ctx.callbackQuery?.from || ctx.inlineQuery?.from
+  if (!from) {
+    return await next()
+  }
   const user = await db.query.users.findFirst({
-    where: eq(users.telegramId, ctx.from.id),
+    where: eq(users.telegramId, from.id),
   })
 
   if (!user) {
     await db.insert(users).values([
       {
-        telegramId: ctx.from.id,
-        firstName: ctx.from.first_name,
-        lastName: ctx.from.last_name,
-        username: ctx.from.username,
+        telegramId: from.id,
+        firstName: from.first_name,
+        lastName: from.last_name,
+        username: from.username,
       },
     ])
   }

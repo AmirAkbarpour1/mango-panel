@@ -7,6 +7,7 @@ function registerHandlers(bot: AppBot) {
   bot.command(['start', 'home'], homeHandler)
   bot.callbackQuery('home', homeHandler)
   bot.callbackQuery(/buy*/, buyHandler)
+  bot.on('message', buyHandler)
   bot.inlineQuery(/services*/, servicesHandler)
 }
 

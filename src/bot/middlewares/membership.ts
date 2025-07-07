@@ -8,8 +8,14 @@ const membershipMiddleware = createBotHandler(async (ctx, next) => {
   const channels = await db.query.membershipChannels.findMany()
   const nonMemberChannels = []
 
+  const from
+    = ctx.message?.from || ctx.callbackQuery?.from || ctx.inlineQuery?.from
+  if (!from) {
+    return await next()
+  }
+
   for (const channel of channels) {
-    const member = await ctx.api.getChatMember(channel.channelId, ctx.from.id)
+    const member = await ctx.api.getChatMember(channel.channelId, from.id)
     if (!['member', 'creator', 'administrator'].includes(member.status)) {
       nonMemberChannels.push(channel)
     }
@@ -25,7 +31,7 @@ const membershipMiddleware = createBotHandler(async (ctx, next) => {
           await ctx.api.editMessageText(
             ctx.chat.id,
             messageId,
-            ctx.t('messages-home', { name: ctx.from.first_name }),
+            ctx.t('messages-home', { name: from.first_name }),
             { reply_markup: homeKeyboard(ctx.t) },
           )
         }
@@ -51,52 +57,73 @@ const membershipMiddleware = createBotHandler(async (ctx, next) => {
     }
   }
 
-  keyboard
-    .row()
-    .text(ctx.t('buttons-membership-check'), 'membership-check')
-    .row()
-    .text(
-      ctx.t('buttons-membership-check-time', {
-        time: new Date().toLocaleString(await ctx.i18n.getLocale(), {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
+  if (!ctx.inlineQuery) {
+    keyboard
+      .row()
+      .text(ctx.t('buttons-membership-check'), 'membership-check')
+      .row()
+      .text(
+        ctx.t('buttons-membership-check-time', {
+          time: new Date().toLocaleString(await ctx.i18n.getLocale(), {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          }),
         }),
-      }),
-    )
+      )
+  }
 
   if (ctx.message) {
     const sentMessage = await ctx.reply(
-      ctx.t('messages-membership', { name: ctx.from.first_name }),
+      ctx.t('messages-membership', { name: from.first_name }),
       {
         reply_markup: keyboard,
         reply_parameters: { message_id: ctx.message.message_id },
       },
     )
 
-    ctx.session.membershipMessagesId?.push(sentMessage.message_id)
-    return
+    return ctx.session.membershipMessagesId?.push(sentMessage.message_id)
   }
 
   if (ctx.callbackQuery?.data === 'membership-check') {
-    await ctx.answerCallbackQuery({
+    return await ctx.answerCallbackQuery({
       text: ctx.t('messages-membership-checking'),
       show_alert: true,
     })
-
-    await ctx.editMessageReplyMarkup({ reply_markup: keyboard })
-    return
   }
 
   if (ctx.callbackQuery?.message) {
     await ctx.editMessageText(
-      ctx.t('membership-join-required', { name: ctx.from.first_name }),
+      ctx.t('messages-membership', { name: from.first_name }),
       { reply_markup: keyboard },
     )
 
-    ctx.session.membershipMessagesId?.push(ctx.callbackQuery.message.message_id)
-    return
+    return ctx.session.membershipMessagesId?.push(
+      ctx.callbackQuery.message.message_id,
+    )
   }
+
+  if (ctx.inlineQuery) {
+    await ctx.answerInlineQuery(
+      [
+        {
+          type: 'article',
+          id: 'messages-membership-inline',
+          title: ctx.t('buttons-membership-check'),
+          input_message_content: {
+            message_text: ctx.t('messages-membership-inline', {
+              name: from.first_name,
+            }),
+          },
+          reply_markup: keyboard,
+        },
+      ],
+      { cache_time: 0 },
+    )
+
+    return ctx.session.membershipMessagesId?.push()
+  }
+
   throw new Error('Callback message not found in membership handler')
 })
 
