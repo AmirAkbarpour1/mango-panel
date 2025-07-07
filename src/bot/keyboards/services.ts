@@ -54,6 +54,11 @@ async function serviceKeyboard(
     .row()
     .text(t('buttons-services-volume', { volume: remainingVolume }))
     .text(t('buttons-services-volume-remaining'))
+    .row()
+    .switchInline(
+      t('buttons-services-share'),
+      `services-share-${userServiceId}`,
+    )
     .build()
 
   return keyboard

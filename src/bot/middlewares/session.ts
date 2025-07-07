@@ -11,6 +11,13 @@ function initial(): SessionData {
 const sessionMiddleware = session<SessionData, BotContext>({
   initial,
   storage: new DrizzleAdapter(),
+  getSessionKey: (ctx) => {
+    if (ctx.chat)
+      return String(ctx.chat.id)
+    if (ctx.inlineQuery)
+      return `inline-${ctx.from?.id}`
+    return undefined
+  },
 })
 
 export default sessionMiddleware

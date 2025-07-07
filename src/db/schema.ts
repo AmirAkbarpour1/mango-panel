@@ -60,11 +60,11 @@ export const userServices = sqliteTable('user_services', {
   userId: integer('user_id').notNull(),
   serviceId: integer('service_id').notNull(),
   basePrice: real('base_price'),
-  volume: real('volume'),
-  days: integer('days'),
-  name: text('name'),
+  volume: real('volume').notNull(),
+  days: integer('days').notNull(),
+  name: text('name').notNull(),
   discountCode: text('discount_code'),
-  finalPrice: real('final_price'),
+  finalPrice: real('final_price').notNull(),
   createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
 })
 

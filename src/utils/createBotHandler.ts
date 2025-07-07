@@ -3,10 +3,10 @@ import type { MiddlewareFn } from 'grammy'
 import type { BotContext } from '@/types/bot'
 import handleBotError from '@/utils/handleBotError'
 
-function isPrivateMessage(
+function isUserHandler(
   ctx: BotContext,
 ): ctx is BotContext & { from: NonNullable<BotContext['from']> } {
-  return Boolean(ctx.from && ctx.chat?.type === 'private')
+  return Boolean(ctx.from)
 }
 
 function createBotHandler(
@@ -15,8 +15,9 @@ function createBotHandler(
   >,
 ): MiddlewareFn<BotContext> {
   return async (ctx, next) => {
-    if (!isPrivateMessage(ctx))
+    if (!isUserHandler(ctx)) {
       return await next()
+    }
 
     try {
       await callback(ctx, next)

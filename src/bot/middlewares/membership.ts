@@ -97,7 +97,6 @@ const membershipMiddleware = createBotHandler(async (ctx, next) => {
     ctx.session.membershipMessagesId?.push(ctx.callbackQuery.message.message_id)
     return
   }
-
   throw new Error('Callback message not found in membership handler')
 })
 

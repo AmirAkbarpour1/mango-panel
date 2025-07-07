@@ -3,7 +3,7 @@ import { isResponseError } from 'up-fetch'
 import * as v from 'valibot'
 
 import homeKeyboard from '@/bot/keyboards/home'
-import serviceKeyboard from '@/bot/keyboards/service'
+import serviceKeyboard from '@/bot/keyboards/services'
 import db from '@/db'
 import {
   categories as categoriesTable,
