@@ -31,6 +31,16 @@ async function serviceKeyboard(
 
   const statusEmoji = status === 'active' || status === 'on_hold' ? '🟢' : '🔴'
 
+  const shareMessage = ctx.t('messages-services-share-text', {
+    name,
+    status: statusEmoji,
+    expiration,
+    days,
+    totalVolume,
+    usedVolume,
+    remainingVolume,
+  })
+
   keyboard
     .text(t('buttons-services-sub'), `services-sub-${userServiceId}`)
     .row()
@@ -54,6 +64,8 @@ async function serviceKeyboard(
     .row()
     .text(t('buttons-services-volume', { volume: remainingVolume }))
     .text(t('buttons-services-volume-remaining'))
+    .row()
+    .copyText(t('buttons-services-copy'), shareMessage)
     .row()
     .switchInline(
       t('buttons-services-share'),

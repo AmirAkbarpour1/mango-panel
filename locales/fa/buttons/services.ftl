@@ -9,6 +9,7 @@ buttons-services-volume-total = 🔋 حجم کل :
 buttons-services-volume-usaged = 📊 حجم مصرف شده :
 buttons-services-volume-remaining = 🪫 حجم باقی مانده :
 buttons-services-volume = { $volume } گیگابایت
-buttons-services-share = 📤 اشتراک‌ گذاری
+buttons-services-copy = 📋 کپی اطلاعات
+buttons-services-share = 📤  اشتراک‌ گذاری اطلاعات
 buttons-services-share-text = 📤 اشتراک‌ گذاری به وسیله متن
 buttons-services-share-keyboard = 📤  اشتراک‌ گذاری به وسیله کیبورد اینلاین ( شیشه ای )
